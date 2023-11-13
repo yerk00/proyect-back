@@ -1,8 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost/example'
 db = SQLAlchemy(app)
 
@@ -15,8 +16,7 @@ class User(db.Model):
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    hashed_password = generate_password_hash(data['contrasena'])
-    new_user = User(username=data['nombre'], password=hashed_password)
+    new_user = User(username=data['nombre'], password=data['contrasena'])
     db.session.add(new_user)
     db.session.commit()
     return jsonify({'message': 'registered successfully'})
@@ -25,10 +25,10 @@ def register():
 def login():
     data = request.get_json()
     user = User.query.filter_by(username=data['nombre']).first()
-    if not user or not check_password_hash(user.password, data['contrasena']):
+    if not user or not user.password == data['contrasena']:
         return jsonify({'message': 'login failed'})
     return jsonify({'message': 'login successful'})
 
-
 if __name__ == '__main__':
     app.run(debug=True)
+
